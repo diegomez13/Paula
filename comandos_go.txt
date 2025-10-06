@@ -1,0 +1,6 @@
+0 .- go mod init main.go (iniciar proyecto go)
+1 .- touch main.go (crear main.go)
+2 .- CompileDaemon --command="./main" (correr proyecto automaticamente cada vez que se hacen cambios)
+3 .- go run main.go (correr proyecto cada vez)
+4 .- go build main.go (solo compilata proyecto, luego se debe correr con ./main)
+

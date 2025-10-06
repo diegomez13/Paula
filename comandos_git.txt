@@ -1,0 +1,6 @@
+git clone https://github.com/diegomez13/Paula (clonar repositorio)
+git add . (agregar cambios al commit)
+git commit -m "nombre del commit" (crear commit)
+git push (subir cambios del commit)
+git pull (actualizar archivos del repositorio)
+git status (ver status de git, error, add, etc)

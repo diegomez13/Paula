@@ -1,0 +1,45 @@
+LISTAR
+======
+ls -la
+ls -la nombre_de_directorio
+ls -la nombre_de_directorio/nombre_de_subdirectorio
+ls -la ../nombre_de_directorio_padre
+
+ACCEDER DIRECTORIO
+=================
+
+cd nombre_de_directorio
+cd nombre_de_directorio/nombre_de_subdirectorio
+cd ../nombre_de_directorio_padre
+
+CREAR DIRECORIO
+===============
+
+mkdir nombre_de_directorio
+
+BORRAR ARCHIVOS
+==============
+
+rm nombre_de_archivo
+
+BORRAR DIRECTORIOS
+=================
+
+rm -rf nombre_de_directorio
+
+CAMBIAR NOMBRE O MOVER DIRECTORIO
+================================
+
+mv nombre_de_directorio nuevo_nombre_de_directorio
+
+COPIAR ARCHIVOS Y DIRECTORIOS
+============================
+
+cp nombre_de_directorio nuevo_nombre_de_directorios
+
+CREAR NUEVO ARCHIVO VACIO
+========================
+
+touch nombre_del_archivo
+
+
