@@ -4,3 +4,5 @@
 3 .- go run main.go (correr proyecto cada vez)
 4 .- go build main.go (solo compilata proyecto, luego se debe correr con ./main)
 
+CompileDaemon -command="./main" -build="go build -o main ."
+
