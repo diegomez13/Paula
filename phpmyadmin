@@ -1,0 +1,2 @@
+sudo apt install apache2 php php-mbstring php-zip php-gd php-json php-curl php-mysql -y
+
