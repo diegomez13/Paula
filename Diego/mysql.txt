@@ -54,7 +54,10 @@ rows, err := db.Query("SELECT id_usr, nombre FROM usuarios WHERE ")
 		fmt.Println(id_usr, nombre)
 	}
 
-
+_, err = h.Db.Exec("DELETE FROM Relaciones WHERE id_pos = ?", id_pos)
+	if err != nil {
+		return err
+	}
 
 
 
