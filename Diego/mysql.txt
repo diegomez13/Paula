@@ -37,3 +37,27 @@ func (h *MyHandler) InsertPoolDb() (int, error) {
 	}
 	return int(id), nil
 }
+
+rows, err := db.Query("SELECT id_usr, nombre FROM usuarios WHERE ")
+	if err != nil {
+		return res, err
+	}
+	defer rows.Close()
+
+	var id_usr int
+	var nombre string
+
+	for rows.Next() {
+		if err := rows.Scan(&id_pos, &nombre); err != nil {
+			return res, err
+		}
+		fmt.Println(id_usr, nombre)
+	}
+
+
+
+
+
+
+
+
