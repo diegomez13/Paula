@@ -1,0 +1,22 @@
+func MysqlConnect() (*sql.DB, error) {
+
+	dsn := "root:12345678@tcp(127.0.0.1:3306)/ControladorAI"
+	db, err := sql.Open("mysql", dsn)
+	if err != nil {
+		fmt.Println("ERROR 1A")
+		return nil, err
+	}
+
+	db.SetConnMaxLifetime(0)
+	db.SetMaxOpenConns(10)
+	db.SetMaxIdleConns(5)
+
+	// Prueba la conexión
+	err = db.Ping()
+	if err != nil {
+		fmt.Println("ERROR 1B")
+		return nil, err
+	}
+
+	return db, nil
+}
