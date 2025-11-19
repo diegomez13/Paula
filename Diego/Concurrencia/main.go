@@ -1,9 +1,14 @@
 package main
 
-import "sync"
+import (
+	"fmt"
+	"sync"
+	"time"
+)
 
 type Respuesta struct {
 	Status bool
+	Valor  int
 }
 
 func main() {
@@ -21,9 +26,16 @@ func main() {
 		close(ch)
 	}()
 
-}
+	for x := range ch {
+		fmt.Println(x)
+	}
 
+}
+func Silence(r Respuesta) {
+
+}
 func Test(wg *sync.WaitGroup, ch chan<- Respuesta, i int) {
 	defer wg.Done()
-	ch <- Respuesta{Status: true}
+	time.Sleep(time.Duration(i*3) * time.Second)
+	ch <- Respuesta{Status: true, Valor: i}
 }
