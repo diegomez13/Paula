@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html lang="es">
+<head><meta charset="UTF-8"><title>Crear Producto</title></head>
+<body>
+<h2>Crear Producto</h2>
+<form method="POST" action="/crear-producto">
+    Nombre del producto: <input type="text" name="nombre" required><br><br>
+    Categoría:
+    <select name="id_cat" required>
+        {{range .Categorias}}
+        <option value="{{.ID}}">{{.Nombre}}</option>
+        {{end}}
+    </select><br><br>
+    <button type="submit">Crear Producto</button>
+</form>
+<br><a href="/">Volver al menú</a>
+</body>
+</html>
