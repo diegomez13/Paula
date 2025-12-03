@@ -155,3 +155,31 @@ func MysqlConnect() (*sql.DB, error) {
 
 	return db, nil
 }
+
+func CreateCookie(key []byte, value []byte, expire int) *fasthttp.Cookie {
+
+	authCookie := fasthttp.Cookie{}
+	authCookie.SetKeyBytes(key)
+	authCookie.SetValueBytes(value)
+	authCookie.SetMaxAge(expire)
+	authCookie.SetPath("/")
+	authCookie.SetHTTPOnly(true)
+	authCookie.SetSameSite(fasthttp.CookieSameSiteLaxMode)
+	//fmt.Println("CreateCookie:", authCookie.String())
+	return &authCookie
+}
+
+func DeleteCookie(ctx *fasthttp.RequestCtx, cookieName string) {
+	// Crear la cookie con el mismo nombre
+	cookie := fasthttp.AcquireCookie()
+	defer fasthttp.ReleaseCookie(cookie)
+
+	// Configurar los valores necesarios para eliminar la cookie
+	cookie.SetKey(cookieName)
+	cookie.SetMaxAge(-1)     // Fecha en el pasado
+	cookie.SetPath("/")      // Asegúrate de que el path coincida con el original
+	cookie.SetHTTPOnly(true) // Si la cookie original era HTTPOnly, mantén esta configuración
+
+	// Añadir la cookie de eliminación a la respuesta
+	ctx.Response.Header.SetCookie(cookie)
+}

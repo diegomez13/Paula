@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"sync"
 	"time"
 )
@@ -28,11 +27,13 @@ func main() {
 	}()
 
 	for x := range ch {
-		fmt.Println(x)
+		Silence(x)
 	}
 
 }
+func Silence(a []Respuesta) {
 
+}
 func Test(wg *sync.WaitGroup, ch chan<- Respuesta, i int) {
 	defer wg.Done()
 	time.Sleep(time.Duration(i*3) * time.Second)
