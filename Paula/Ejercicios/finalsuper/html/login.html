@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login Básico</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background-color: #f0f0f0;
+        }
+        .login-box {
+            background-color: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0px 0px 10px #aaa;
+        }
+        input {
+            display: block;
+            margin-bottom: 10px;
+            width: 100%;
+            padding: 8px;
+        }
+        button {
+            padding: 8px;
+            width: 100%;
+            cursor: pointer;
+        }
+        .error {
+            color: red;
+        }
+    </style>
+</head>
+<body>
+    <div class="login-box">
+        <h2>Login</h2>
+        <form id="loginForm">
+            <input type="text" id="username" placeholder="Usuario" required>
+            <input type="password" id="password" placeholder="Contraseña" required>
+            <button type="submit">Ingresar</button>
+            <p class="error" id="errorMsg"></p>
+        </form>
+    </div>
+
+    <script>
+
+ document.getElementById("loginForm").addEventListener("submit", function(e){
+            e.preventDefault(); // ⛔ evita recargar la página
+
+     
+
+            fetch("http://localhost:8080/api/supermercado", {
+                method: "GET",
+               
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error("Error en la solicitud");
+                } 
+                return response.json();                 
+            })
+            .then(result => {
+               //console.log(result);
+               for (var i=0; i<result.length; i++){
+               // console.log(result[i].ID, result[i].Nombre, result[i].Direccion)
+               console.log(result[i].Nombre, result[i].Direccion);
+               categoria(result[i].ID);
+
+               }
+            })
+            .catch(error => console.error("Error:", error));
+        });
+
+function categoria(id) {
+    fetch("http://localhost:8080/api/categorias/"+id, {
+                method: "GET",
+               
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error("Error en la solicitud");
+                } 
+                return response.json();                 
+            })
+            .then(result => {
+               console.log(result);
+               /*for (var i=0; i<result.length; i++){
+                console.log(result[i].ID, result[i].Nombre, result[i].Direccion)
+               }*/
+            })
+            .catch(error => console.error("Error:", error));
+}
+        /*document.getElementById("loginForm2").addEventListener("submit", function(e){
+            e.preventDefault(); // ⛔ evita recargar la página
+
+            const data = new URLSearchParams();
+            data.append("username", document.getElementById("username").value);
+            data.append("password", document.getElementById("password").value);
+
+            fetch("http://localhost:8080/login", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/x-www-form-urlencoded"
+                },
+                body: data.toString()
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error("Error en la solicitud");
+                } 
+                return response.json();                 
+            })
+            .then(result => {
+                if (result.status == "ok") {
+                    alert("bienvenido "+result.username);
+                    location.reload(true);
+                }else{
+                    alert("error");
+                }
+            })
+            .catch(error => console.error("Error:", error));
+        });*/
+    </script>
+</body>
+</html>

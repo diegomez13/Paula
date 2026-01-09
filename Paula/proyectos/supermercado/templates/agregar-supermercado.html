@@ -1,0 +1,57 @@
+
+    <div class="ht r">
+        <h1>Categorias</h1>
+        <h3>Completa los Campos</h3>
+        <div class="clearfix va ri">
+            <a class="i i1"></a>
+            <a class="i i2"></a>
+        </div>
+    </div>
+    <div class="hf bt">
+        <div class="ft" id="0-0">
+            <div class="r">
+                <h2>HOLA</h2>
+                <div class="clearfix va ri">
+                    <a class="i i3"></a>
+                    <a class="i i4"></a>
+                </div>
+            </div>
+            <h3>BUENA</h3>
+            <div class="f">
+                <input id="accion" type="hidden" value="suser">
+                <input id="id" type="hidden" value="0">
+                <input id="pid" type="hidden" value="0">
+                <label>
+                    <span>Nombre</span>
+                    <input id="n" type="text">
+                    <div class="msg"></div>
+                </label>
+                <div class="s">
+                    <div class="enviar" onclick="Send()">Enviar</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="hf ab">
+        <div class="ft" id="0-0">
+            <div class="r">
+                <h2>HOLA</h2>
+                <div class="clearfix va ri">
+                    <a class="i i5"></a>
+                    <a class="i i6"></a>
+                </div>
+            </div>
+            <h3>BUENA</h3>
+            <div class="lis">
+                 {{range .Lista}}
+                <div class="it r" id="1-0">
+                    <div class="im">{{.Nombre}}</div>
+                    <div class="clearfix va ri">
+                        <a class="i i5"></a>
+                        <a class="i i6"></a>
+                    </div>
+                </div>
+                 {{end}}
+            </div>
+        </div>
+    </div>
