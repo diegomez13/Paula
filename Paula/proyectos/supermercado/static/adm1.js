@@ -43,22 +43,30 @@ function cargarContenido(url) {
 function Send(){
 
     console.log(GC("f"));
-/*
+
 
     var f = GC("f").querySelectorAll('input');
     var obj = {};
     for(var x of f){
-        obj[x.id] = { v: x.value, c: x.className }
+        obj[x.id] = x.value
+               // obj[x.id] = { v: x.value, c: x.className }
+
     }
 
-    console.log(obj);
-    switch(obj.accion.v) {
-        case "suser":
-            
-        default:
-            break
-    }
-*/
+ fetch('/guardar', {
+    method: 'POST',
+    headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'            
+    },
+    body: JSON.stringify(obj)
+})
+.then(response => {
+    if (!response.ok) throw new Error('Error en la respuesta');
+    return response.json();
+})
+.then(data => console.log('Éxito:', data))
+.catch(error => console.error('Fallo:', error));
 }
 
 function LoadCategoria(){

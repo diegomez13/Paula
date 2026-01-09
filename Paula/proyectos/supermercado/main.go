@@ -2,6 +2,7 @@ package main
 
 import (
 	"database/sql"
+	"encoding/json"
 	"fmt"
 	"html/template"
 	"log"
@@ -33,6 +34,7 @@ func main() {
 	r.GET("/", app.Home)
 	r.ServeFiles("/static/{filepath:*}", "./static")
 	r.GET("/supermercado", app.AddSuper)
+	r.POST("/guardar", app.Guardar)
 
 	fmt.Println("Servidor corriendo en http://localhost:8080")
 	log.Fatal(fasthttp.ListenAndServe(":8080", func(ctx *fasthttp.RequestCtx) {
@@ -42,6 +44,56 @@ func main() {
 
 func (a *App) Home(ctx *fasthttp.RequestCtx) {
 	a.renderHTML(ctx, "admin.html", nil)
+}
+
+type GuardarData struct {
+	Accion    string `json:"accion"`
+	Id        string `json:"id"`
+	Nombre    string `json:"n"`
+	Direccion string `json:"d"`
+}
+
+func (a *App) Guardar(ctx *fasthttp.RequestCtx) {
+	fmt.Printf("Método: %s\n", ctx.Method())
+	fmt.Printf("Content-Type: %s\n", ctx.Request.Header.ContentType())
+	fmt.Printf("Body length: %d bytes\n", len(ctx.PostBody()))
+	fmt.Printf("Body raw: %s\n", ctx.PostBody())
+
+	var Data GuardarData
+	body := ctx.PostBody()
+
+	if err := json.Unmarshal(body, &Data); err != nil {
+		ctx.Error("JSON inválido: "+err.Error(), fasthttp.StatusBadRequest)
+		fmt.Println(err)
+
+		return
+
+	}
+	fmt.Println(Data)
+	/*
+		if Data.Accion == "super" {
+			if Data.Id == 0 {
+				fmt.Println("Agregar super", Data)
+			}
+			if Data.Id > 0 {
+				fmt.Println("Modificar super", Data)
+			}
+
+		}
+	*/
+	respuesta := map[string]interface{}{
+		"mensaje": "Usuario creado correctamente",
+		"id":      "usr_123abc",
+	}
+
+	ctx.Response.Header.SetContentType("application/json")
+
+	jsonBytes, err := json.Marshal(respuesta)
+	if err != nil {
+		ctx.Error("Error al generar respuesta", fasthttp.StatusInternalServerError)
+		return
+	}
+	ctx.SetBody(jsonBytes)
 }
 
 func (a *App) AddSuper(ctx *fasthttp.RequestCtx) {
