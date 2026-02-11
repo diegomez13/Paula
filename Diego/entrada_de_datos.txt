@@ -74,3 +74,17 @@ func validarMySQL(user, pass string) bool {
 
 	return db.Ping() == nil
 }
+
+
+
+
+
+data, err := os.ReadFile("schema.sql")
+if err != nil {
+	panic(err)
+}
+
+_, err = db.Exec(string(data))
+if err != nil {
+	panic(err)
+}
