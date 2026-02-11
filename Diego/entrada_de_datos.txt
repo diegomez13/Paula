@@ -1,0 +1,76 @@
+func main() {
+	reader := bufio.NewReader(os.Stdin)
+
+	fmt.Println("1) Configurar sistema")
+	fmt.Println("2) Salir")
+	fmt.Print("> ")
+
+	op, _ := reader.ReadString('\n')
+	op = strings.TrimSpace(op)
+
+	if op != "1" {
+		fmt.Println("Saliendo...")
+		return
+	}
+
+	// ===== LOGIN DB =====
+	var dbUser, dbPass string
+
+	for {
+		fmt.Print("Usuario DB: ")
+		dbUser, _ = reader.ReadString('\n')
+		dbUser = strings.TrimSpace(dbUser)
+
+		fmt.Print("Password DB: ")
+		p, _ := term.ReadPassword(int(os.Stdin.Fd()))
+		fmt.Println()
+		dbPass = string(p)
+
+		if validarDB(dbUser, dbPass) {
+			fmt.Println("✔ Conexión DB OK")
+			break
+		}
+
+		fmt.Println("❌ Credenciales DB incorrectas")
+	}
+
+	// ===== DATOS SISTEMA =====
+	fmt.Print("Nuevo usuario sistema: ")
+	sysUser, _ := reader.ReadString('\n')
+	sysUser = strings.TrimSpace(sysUser)
+
+	fmt.Print("Password sistema: ")
+	p, _ := term.ReadPassword(int(os.Stdin.Fd()))
+	fmt.Println()
+	sysPass := string(p)
+
+	guardarUsuarioDB(sysUser, sysPass)
+
+	fmt.Println("✔ Usuario guardado en DB")
+}
+
+
+
+
+
+import "golang.org/x/crypto/bcrypt"
+
+hash, _ := bcrypt.GenerateFromPassword([]byte(pass), bcrypt.DefaultCost)
+
+
+
+
+
+
+
+func validarMySQL(user, pass string) bool {
+	dsn := fmt.Sprintf("%s:%s@tcp(localhost:3306)/", user, pass)
+
+	db, err := sql.Open("mysql", dsn)
+	if err != nil {
+		return false
+	}
+	defer db.Close()
+
+	return db.Ping() == nil
+}
