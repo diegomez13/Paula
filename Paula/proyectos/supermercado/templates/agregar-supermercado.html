@@ -10,25 +10,25 @@
     <div class="hf bt">
         <div class="ft" id="0-0">
             <div class="r">
-                <h2>HOLA</h2>
+                <h2>Administrar</h2>
                 <div class="clearfix va ri">
                     <a class="i i3"></a>
                     <a class="i i4"></a>
                 </div>
             </div>
-            <h3>BUENA</h3>
+            <h3>Supermercados</h3>
             <div class="f">
                 <input id="accion" type="hidden" value="super">
-                <input id="id" type="hidden" value="0">
+                <input id="id" type="hidden" value="{{.ID}}">
                 <input id="pid" type="hidden" value="0">
                 <label>
                     <span>Nombre</span>
-                    <input id="n" type="text">
+                    <input id="n" type="text" value="{{.Nombre}}">
                     <div class="msg"></div>
                 </label>
                 <label>
                     <span>Direccion</span>
-                    <input id="d" type="text">
+                    <input id="d" type="text" value="{{.Direccion}}">
                     <div class="msg"></div>
                 </label>
                 <div class="s">
@@ -40,20 +40,21 @@
     <div class="hf ab">
         <div class="ft" id="0-0">
             <div class="r">
-                <h2>HOLA</h2>
+                <h2>Administrar</h2>
                 <div class="clearfix va ri">
                     <a class="i i5"></a>
                     <a class="i i6"></a>
                 </div>
             </div>
-            <h3>BUENA</h3>
+            <h3>Supermercados</h3>
             <div class="lis">
                  {{range .Lista}}
                 <div class="it r" id="1-0">
                     <div class="im">{{.Nombre}}</div>
                     <div class="clearfix va ri">
-                        <a class="i i5"></a>
-                        <a class="i i6"></a>
+                        <a class="i i5" onclick="cargarContenido('/supermercado/{{.ID}}')" ></a>
+                        <a class="i i6" onclick="cargarContenido('/categoria/{{.ID}}/0')"></a>
+                        <a class="i i7" onclick="Eliminar('super','{{.ID}}','0','0')"></a>
                     </div>
                 </div>
                  {{end}}

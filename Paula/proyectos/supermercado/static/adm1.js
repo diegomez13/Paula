@@ -42,15 +42,11 @@ function cargarContenido(url) {
 
 function Send(){
 
-    console.log(GC("f"));
-
-
     var f = GC("f").querySelectorAll('input');
     var obj = {};
     for(var x of f){
         obj[x.id] = x.value
                // obj[x.id] = { v: x.value, c: x.className }
-
     }
 
  fetch('/guardar', {
@@ -65,15 +61,65 @@ function Send(){
     if (!response.ok) throw new Error('Error en la respuesta');
     return response.json();
 })
-.then(data => console.log('Éxito:', data))
+.then(data => {
+    if (data.Accion == "super") {
+        cargarContenido("/supermercado/0")
+    }
+    if (data.Accion == "categoria") {
+        cargarContenido("/categoria/"+data.Id+"/0")
+    }
+    if (data.Accion == "producto") {
+        cargarContenido("/producto/"+data.Id+"/"+data.Id_cat+"/0")
+    }
+    if (data.Accion == "error") {
+        alert(data.Mensaje)
+    }
+})
 .catch(error => console.error('Fallo:', error));
 }
 
+function Eliminar(tipo, id_sup, id_cat, id_pro){
+
+
+ if (alert("Esta seguro que desea borrarlo")){
+
+ 
+    var obj = {accion: tipo, id_sup:id_sup, id_cat:id_cat, id_pro:id_pro};
+
+ fetch('/eliminar', {
+    method: 'POST',
+    headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'            
+    },
+    body: JSON.stringify(obj)
+})
+.then(response => {
+    if (!response.ok) throw new Error('Error en la respuesta');
+    return response.json();
+})
+.then(data => {
+    if (tipo == "super") {
+        cargarContenido("/supermercado/0")
+    }
+    if (tipo == "categoria") {
+        cargarContenido("/categoria/"+id_sup+"/0")
+    }
+    if (tipo == "producto") {
+        cargarContenido("/producto/"+id_sup+"/"+id_cat+"/0")
+    }
+})
+.catch(error => console.error('Fallo:', error));
+}
+
+}
+
+
 function LoadCategoria(){
     
+cargarContenido("/supermercado/0")
 
-
-    base.LoadCat(0, 0);
+   // base.LoadCat(0, 0);
 }
 function ShowCat(){
 
