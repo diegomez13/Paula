@@ -1,24 +1,162 @@
 <!DOCTYPE html>
-<html>
-<head><title>Login</title></head>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Iniciar Sesión</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            max-width: 400px;
+            width: 100%;
+        }
+        h2 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 5px;
+        }
+        .subtitulo {
+            text-align: center;
+            color: #666;
+            margin-bottom: 20px;
+            font-size: 14px;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            color: #555;
+        }
+        input[type="email"],
+        input[type="password"],
+        input[type="text"] {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        button {
+            width: 100%;
+            padding: 12px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        .btn-registro {
+            background-color: #28a745;
+        }
+        .btn-registro:hover {
+            background-color: #218838;
+        }
+        .mensaje {
+            padding: 10px;
+            margin-bottom: 15px;
+            border-radius: 4px;
+            text-align: center;
+        }
+        .error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .exito {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .separador {
+            border: none;
+            border-top: 1px solid #ddd;
+            margin: 25px 0;
+        }
+        .volver {
+            text-align: center;
+            margin-top: 15px;
+        }
+        .volver a {
+            color: #007bff;
+            text-decoration: none;
+            font-size: 14px;
+        }
+        .volver a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
 <body>
-    <h1>Iniciar sesión o registrarse</h1>
-    {{if .Error}}<p style="color:red;">{{.Error}}</p>{{end}}
-    {{if .Success}}<p style="color:green;">{{.Success}}</p>{{end}}
+    <div class="container">
 
-    <form method="POST" action="/login">
-        <label>Correo: <input type="email" name="username"></label><br>
-        <label>Contraseña: <input type="password" name="password"></label><br>
-        <button type="submit">Login</button>
-    </form>
+        <!-- LOGIN -->
+        <h2>Iniciar Sesión</h2>
+        <p class="subtitulo">Ingresa tus credenciales para continuar.</p>
 
-    <hr>
-    <h2>Registrarse</h2>
-    <form method="POST" action="/registro">
-        <label>Nombre: <input type="text" name="nombre"></label><br>
-        <label>Correo: <input type="email" name="correo"></label><br>
-        <label>Contraseña: <input type="password" name="password"></label><br>
-        <button type="submit">Registrarse</button>
-    </form>
+        {{if .Error}}
+        <div class="mensaje error">{{.Error}}</div>
+        {{end}}
+
+        {{if .Success}}
+        <div class="mensaje exito">{{.Success}}</div>
+        {{end}}
+
+        <form method="POST" action="/login">
+            <div class="form-group">
+                <label for="username">Correo electrónico:</label>
+                <input type="email" id="username" name="username" required placeholder="tu@email.com">
+            </div>
+            <div class="form-group">
+                <label for="password">Contraseña:</label>
+                <input type="password" id="password" name="password" required placeholder="••••••••">
+            </div>
+            <button type="submit">Iniciar Sesión</button>
+        </form>
+
+        <div class="volver">
+            <a href="/recuperar-password">¿Olvidaste tu contraseña?</a>
+        </div>
+
+        <hr class="separador">
+
+        <!-- REGISTRO -->
+        <h2>Registrarse</h2>
+        <p class="subtitulo">Crea una cuenta nueva.</p>
+
+        <form method="POST" action="/registro">
+            <div class="form-group">
+                <label for="nombre">Nombre:</label>
+                <input type="text" id="nombre" name="nombre" required placeholder="Tu nombre">
+            </div>
+            <div class="form-group">
+                <label for="correo">Correo electrónico:</label>
+                <input type="email" id="correo" name="correo" required placeholder="tu@email.com">
+            </div>
+            <div class="form-group">
+                <label for="password_reg">Contraseña:</label>
+                <input type="password" id="password_reg" name="password" required placeholder="••••••••">
+            </div>
+            <button type="submit" class="btn-registro">Registrarse</button>
+        </form>
+
+    </div>
 </body>
 </html>

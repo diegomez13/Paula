@@ -40,6 +40,7 @@ function cargarContenido(url) {
         });
 }
 
+
 function Send(){
 
     var f = GC("f").querySelectorAll('input');

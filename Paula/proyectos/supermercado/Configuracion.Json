@@ -4,6 +4,8 @@
   "IdPro": 0,
   "Userdb": "root",
   "Passdb": "12345678",
-  "UserSistema": "paulago@paulago.cl",
-  "PassSistema": "$2a$10$1r.ioG.AdmJUwVk8W6CGFuiuYFsjBKaSy0vUnzA8LgMHkFOXCHCRu"
+  "UserSistema": "paula",
+  "PassSistema": "$2a$10$qOXf3wwQ2cKm8nIPhvwtgOiGMGEVdHVX3y80FEj10ciaHCO4ZNDqK",
+  "EmailSMTP": "paula.gomez.bezma@gmail.com",
+  "PasswordSMTP": "mlir ecea jibc qanu"
 }

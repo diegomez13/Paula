@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"crypto/rand"
 	"database/sql"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"html/template"
@@ -19,6 +20,7 @@ import (
 	_ "github.com/go-sql-driver/mysql"
 	"golang.org/x/crypto/bcrypt"
 	"golang.org/x/term"
+	"gopkg.in/gomail.v2"
 
 	"github.com/valyala/fasthttp"
 )
@@ -37,13 +39,16 @@ type Sistema struct {
 }
 
 type Configuracion struct {
-	IdSuper     uint64
-	IdCat       uint64
-	IdPro       uint64
-	Userdb      string
-	Passdb      string
-	UserSistema string `json:"UserSistema"`
-	PassSistema string `json:"PassSistema"`
+	IdSuper      uint64
+	IdCat        uint64
+	IdPro        uint64
+	Userdb       string
+	Passdb       string
+	UserSistema  string `json:"UserSistema"`
+	PassSistema  string `json:"PassSistema"`
+	EmailSMTP    string `json:"EmailSMTP"`    // tu email de Gmail
+	PasswordSMTP string `json:"PasswordSMTP"` // contraseña de aplicación de Gmail
+
 }
 type Supermercado struct {
 	IdSuper    uint64
@@ -82,7 +87,6 @@ func (s *Sistema) GuardarConfiguracion() {
 		fmt.Println(err)
 	}
 }
-
 func validarCredencialesSistema(user, pass, hashGuardado string) bool {
 	if user == "" || hashGuardado == "" {
 		return false
@@ -90,7 +94,6 @@ func validarCredencialesSistema(user, pass, hashGuardado string) bool {
 	err := bcrypt.CompareHashAndPassword([]byte(hashGuardado), []byte(pass))
 	return err == nil
 }
-
 func (s *Sistema) AddSuper(nombre string) {
 	id_sup := atomic.AddUint64(&s.Configuracion.IdSuper, 1)
 	super := Supermercado{IdSuper: id_sup, Nombre: nombre, Fecha: time.Now(), Categorias: []Categoria{}}
@@ -267,10 +270,9 @@ func (s *Sistema) ModificarProducto(IdSuper uint64, IdCat uint64, IdPro uint64, 
 
 }
 func main() {
-
 	reader := bufio.NewReader(os.Stdin)
 
-	// Cargar configuración existente (si existe)
+	// Cargar configuración existente
 	var Conf Configuracion
 	configExists := false
 	data, err := os.ReadFile("./Configuracion.Json")
@@ -281,18 +283,33 @@ func main() {
 		}
 	}
 
-	// Validar si la configuración está completa
+	// Verificar si configuración está completa
 	configCompleta := configExists &&
 		Conf.Userdb != "" &&
 		Conf.Passdb != "" &&
 		Conf.UserSistema != "" &&
 		Conf.PassSistema != ""
 
-	// Menú principal
+	// SI YA ESTÁ TODO CONFIGURADO → Iniciar directo
+	if configCompleta && validarDB(Conf.Userdb, Conf.Passdb) {
+		fmt.Println("✔ Configuración válida encontrada")
+		fmt.Println("✔ Iniciando servidor...")
+		iniciarServidor(Conf)
+		return
+	}
+
+	// SI NO ESTÁ CONFIGURADO O FALLÓ VALIDACIÓN → Mostrar menú
+	if configCompleta && !validarDB(Conf.Userdb, Conf.Passdb) {
+		fmt.Println("⚠️  Error: No se puede conectar a la base de datos")
+		fmt.Println("    Reconfigure las credenciales")
+	} else {
+		fmt.Println("⚠️  Primera vez o configuración incompleta")
+	}
+
 	for {
 		fmt.Println("\n=== Configurar sistema ===")
 		fmt.Println("1) Base de datos")
-		fmt.Println("2) Archivos")
+		fmt.Println("2) Archivos (Usuario del sistema)")
 		fmt.Println("3) Iniciar servidor")
 		fmt.Print("> ")
 
@@ -322,7 +339,19 @@ func main() {
 					guardarConfiguracion(Conf)
 					configExists = true
 					configCompleta = Conf.UserSistema != "" && Conf.PassSistema != ""
+					data, err := os.ReadFile("./schema.sql")
+					if err != nil {
+						panic(err)
+					}
+					db := Connect2(dbUser, dbPass)
+					defer db.Close()
+					_, err = db.Exec(string(data))
+					if err != nil {
+						panic(err)
+					}
+
 					break
+
 				}
 				fmt.Println("❌ Credenciales DB incorrectas. Intente nuevamente.")
 			}
@@ -366,7 +395,7 @@ func main() {
 				continue
 			}
 
-			// AGREGAR ESTA VALIDACIÓN DE CREDENCIALES DEL SISTEMA
+			// Validar credenciales del sistema antes de iniciar
 			fmt.Println("\n=== Autenticación del Sistema ===")
 			fmt.Print("Usuario del sistema: ")
 			userInput, _ := reader.ReadString('\n')
@@ -390,7 +419,7 @@ func main() {
 
 			fmt.Println("✔ Autenticación exitosa")
 
-			// Validar nuevamente la DB antes de iniciar
+			// Validar conexión DB antes de iniciar
 			if !validarDB(Conf.Userdb, Conf.Passdb) {
 				fmt.Println("❌ Error: No se puede conectar a la base de datos")
 				fmt.Println("   Reconfigure las credenciales (opción 1)")
@@ -400,8 +429,12 @@ func main() {
 			// Iniciar el servidor
 			iniciarServidor(Conf)
 			return
+
+		default:
+			fmt.Println("Opción no válida")
 		}
 	}
+
 }
 
 /*
@@ -681,7 +714,6 @@ func (a *App) Guardar(ctx *fasthttp.RequestCtx) {
 	}
 	ctx.SetBody(jsonBytes)
 }
-
 func guardarConfiguracion(conf Configuracion) error {
 	data, err := json.MarshalIndent(conf, "", "  ")
 	if err != nil {
@@ -689,9 +721,9 @@ func guardarConfiguracion(conf Configuracion) error {
 	}
 	return os.WriteFile("./Configuracion.Json", data, 0600)
 }
-
 func iniciarServidor(Conf Configuracion) {
-	db := Connect()
+	db := Connect(Conf.Userdb, Conf.Passdb)
+	verificarYCrearTablas(db)
 	defer db.Close()
 
 	var err error
@@ -709,6 +741,8 @@ func iniciarServidor(Conf Configuracion) {
 			Supermercados: []Supermercado{},
 		},
 	}
+	// En iniciarServidor, después de db := Connect()
+	app.limpiarTokensExpirados()
 
 	r := router.New()
 	r.GET("/", app.mostrarHomeOLogin)
@@ -721,13 +755,17 @@ func iniciarServidor(Conf Configuracion) {
 	r.POST("/guardar", app.authMiddleware(app.Guardar))
 	r.POST("/eliminar", app.authMiddleware(app.Eliminar))
 	r.ServeFiles("/static/{filepath:*}", "./static")
+	r.GET("/recuperar-password", app.mostrarRecuperacion)
+	r.POST("/recuperar-password", app.procesarRecuperacion)
+	r.GET("/resetear-password", app.mostrarReseteo)
+	r.POST("/resetear-password", app.procesarReseteo)
+	//r.POST("/recuperar-password", app.procesarRecuperacion)
 
 	fmt.Println("✔ Servidor corriendo en http://localhost:8080")
 	log.Fatal(fasthttp.ListenAndServe(":8080", func(ctx *fasthttp.RequestCtx) {
 		app.corsMiddleware(r.Handler)(ctx)
 	}))
 }
-
 func (a *App) AddSuper(ctx *fasthttp.RequestCtx) {
 	//fmt.Printf("tipo %T", ctx.UserValue("id"))
 	idsuper := getID(ctx.UserValue("id"))
@@ -798,7 +836,6 @@ func (a *App) AddSuper(ctx *fasthttp.RequestCtx) {
 	}
 	a.renderHTML(ctx, "agregar-supermercado.html", super)
 }
-
 func (a *App) AddCategoria(ctx *fasthttp.RequestCtx) {
 	id_sup := getID(ctx.UserValue("id_sup"))
 	id_cat := getID(ctx.UserValue("id_cat"))
@@ -998,7 +1035,6 @@ func (a *App) Permisos(id_sup string, ctx *fasthttp.RequestCtx) Permisos {
 	}
 	return permisos
 }
-
 func (a *App) procesarRegistro(ctx *fasthttp.RequestCtx) {
 	nombre := strings.TrimSpace(string(ctx.PostArgs().Peek("nombre")))
 	correo := strings.TrimSpace(string(ctx.PostArgs().Peek("correo")))
@@ -1100,6 +1136,156 @@ func generarCookieSegura(longitud int) (string, error) {
 	}
 	return string(bytes), nil
 }
+
+// Generar token aleatorio
+func generarToken() string {
+	b := make([]byte, 32)
+	rand.Read(b)
+	return hex.EncodeToString(b)
+}
+
+// Enviar email
+func enviarEmailRecuperacion(destinatario, token string, conf Configuracion) error {
+	log.Println("📧 Intentando enviar email a:", destinatario)
+	log.Println("📧 Usando SMTP:", conf.EmailSMTP)
+
+	m := gomail.NewMessage()
+	m.SetHeader("From", conf.EmailSMTP)
+	m.SetHeader("To", destinatario)
+	m.SetHeader("Subject", "Recuperación de Contraseña")
+
+	enlace := fmt.Sprintf("http://localhost:8080/resetear-password?token=%s", token)
+
+	cuerpo := fmt.Sprintf(`
+        <html>
+        <body style="font-family: Arial, sans-serif;">
+            <h2>Recuperación de Contraseña</h2>
+            <p>Has solicitado restablecer tu contraseña.</p>
+            <p>Haz clic en el siguiente enlace para crear una nueva contraseña:</p>
+            <p><a href="%s" style="background-color: #007bff; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; display: inline-block;">Restablecer Contraseña</a></p>
+            <p>Este enlace expirará en 1 hora.</p>
+            <p>Si no solicitaste este cambio, ignora este correo.</p>
+        </body>
+        </html>
+    `, enlace)
+
+	m.SetBody("text/html", cuerpo)
+
+	d := gomail.NewDialer("smtp.gmail.com", 587, conf.EmailSMTP, conf.PasswordSMTP)
+
+	err := d.DialAndSend(m)
+	if err != nil {
+		log.Println("❌ Error enviando email:", err)
+		return err
+	}
+
+	log.Println("✅ Email enviado correctamente a:", destinatario)
+	return nil
+}
+
+// Mostrar página de recuperación (GET)
+func (a *App) mostrarRecuperacion(ctx *fasthttp.RequestCtx) {
+	data := map[string]interface{}{}
+	a.renderHTML(ctx, "recuperar.html", data)
+}
+
+// Procesar solicitud de recuperación (POST)
+func (a *App) procesarRecuperacion(ctx *fasthttp.RequestCtx) {
+	correo := string(ctx.FormValue("correo"))
+
+	// Verificar si el correo existe
+	var idUsr int
+	err := a.db.QueryRow("SELECT id_usr FROM usuarios WHERE correo = ?", correo).Scan(&idUsr)
+
+	if err != nil {
+		// No revelar si el correo existe o no (seguridad)
+		data := map[string]interface{}{
+			"Exito": "Si el correo existe, recibirás un enlace de recuperación.",
+		}
+		a.renderHTML(ctx, "recuperar.html", data)
+		return
+	}
+
+	// Generar token
+	token := generarToken()
+	expiracion := time.Now().Add(1 * time.Hour) // Expira en 1 hora
+
+	// Guardar token en BD
+	_, err = a.db.Exec(`
+        INSERT INTO password_reset_tokens (id_usr, token, expiracion) 
+        VALUES (?, ?, ?)
+    `, idUsr, token, expiracion)
+
+	if err != nil {
+		data := map[string]interface{}{
+			"Error": "Error al procesar la solicitud. Intenta nuevamente.",
+		}
+		a.renderHTML(ctx, "recuperar.html", data)
+		return
+	}
+
+	// Enviar email
+	err = enviarEmailRecuperacion(correo, token, a.Sistema.Configuracion)
+
+	if err != nil {
+		log.Println("Error al enviar email:", err)
+		data := map[string]interface{}{
+			"Error": "Error al enviar el correo. Verifica la configuración.",
+		}
+		a.renderHTML(ctx, "recuperar.html", data)
+		return
+	}
+
+	data := map[string]interface{}{
+		"Exito": "Si el correo existe, recibirás un enlace de recuperación.",
+	}
+	a.renderHTML(ctx, "recuperar.html", data)
+}
+
+func verificarYCrearTablas(db *sql.DB) {
+	// Verificar si existe la tabla password_reset_tokens
+	var tableName string
+	err := db.QueryRow("SHOW TABLES LIKE 'password_reset_tokens'").Scan(&tableName)
+
+	if err != nil || tableName == "" {
+		// La tabla no existe, crearla
+		log.Println("⚠️  Tabla password_reset_tokens no encontrada. Creándola...")
+
+		createTable := `
+		CREATE TABLE password_reset_tokens (
+			id INT AUTO_INCREMENT PRIMARY KEY,
+			id_usr INT NOT NULL,
+			token VARCHAR(100) NOT NULL UNIQUE,
+			expiracion DATETIME NOT NULL,
+			usado BOOLEAN DEFAULT FALSE,
+			created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+			FOREIGN KEY (id_usr) REFERENCES usuarios(id_usr) ON DELETE CASCADE
+		) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+		`
+
+		_, err := db.Exec(createTable)
+		if err != nil {
+			log.Println("❌ Error al crear tabla password_reset_tokens:", err)
+		} else {
+			log.Println("✔ Tabla password_reset_tokens creada correctamente")
+		}
+	} else {
+		log.Println("✔ Tabla password_reset_tokens ya existe")
+	}
+}
+func (a *App) limpiarTokensExpirados() {
+	ticker := time.NewTicker(24 * time.Hour) // Cada 24 horas
+	go func() {
+		for range ticker.C {
+			_, err := a.db.Exec("DELETE FROM password_reset_tokens WHERE expiracion < NOW()")
+			if err != nil {
+				log.Println("Error limpiando tokens:", err)
+			} else {
+				log.Println("Tokens expirados limpiados")
+			}
+		}
+	}()
+}
 func (a *App) logout(ctx *fasthttp.RequestCtx) {
 	// Limpiar cookie session
 	cookie := fasthttp.AcquireCookie()
@@ -1168,6 +1354,145 @@ func (a *App) mostrarHomeOLogin(ctx *fasthttp.RequestCtx) {
 	a.renderHTML(ctx, "login.html", nil)
 
 }
+
+// Mostrar página de reseteo (GET)
+func (a *App) mostrarReseteo(ctx *fasthttp.RequestCtx) {
+	token := string(ctx.QueryArgs().Peek("token"))
+
+	if token == "" {
+		data := map[string]interface{}{
+			"Error": "Token no válido o faltante.",
+		}
+		a.renderHTML(ctx, "resetear.html", data)
+		return
+	}
+
+	// Verificar que el token existe y no ha expirado
+	var idUsr int
+	var expiracion time.Time
+	var usado bool
+
+	err := a.db.QueryRow(`
+        SELECT id_usr, expiracion, usado 
+        FROM password_reset_tokens 
+        WHERE token = ?
+    `, token).Scan(&idUsr, &expiracion, &usado)
+
+	if err != nil {
+		data := map[string]interface{}{
+			"Error": "El enlace de recuperación no es válido.",
+		}
+		a.renderHTML(ctx, "resetear.html", data)
+		return
+	}
+
+	// Verificar si ya fue usado
+	if usado {
+		data := map[string]interface{}{
+			"Error": "Este enlace ya fue utilizado.",
+		}
+		a.renderHTML(ctx, "resetear.html", data)
+		return
+	}
+
+	// Verificar si expiró
+	if time.Now().After(expiracion) {
+		data := map[string]interface{}{
+			"Error": "Este enlace ha expirado. Solicita uno nuevo.",
+		}
+		a.renderHTML(ctx, "resetear.html", data)
+		return
+	}
+
+	// Token válido, mostrar formulario
+	data := map[string]interface{}{
+		"Token": token,
+	}
+	a.renderHTML(ctx, "resetear.html", data)
+}
+
+// Procesar reseteo de contraseña (POST)
+func (a *App) procesarReseteo(ctx *fasthttp.RequestCtx) {
+	token := string(ctx.FormValue("token"))
+	password := string(ctx.FormValue("password"))
+	passwordConfirm := string(ctx.FormValue("password_confirm"))
+
+	// Validar que las contraseñas coincidan
+	if password != passwordConfirm {
+		data := map[string]interface{}{
+			"Error": "Las contraseñas no coinciden.",
+			"Token": token,
+		}
+		a.renderHTML(ctx, "resetear.html", data)
+		return
+	}
+
+	// Validar longitud mínima
+	if len(password) < 6 {
+		data := map[string]interface{}{
+			"Error": "La contraseña debe tener al menos 6 caracteres.",
+			"Token": token,
+		}
+		a.renderHTML(ctx, "resetear.html", data)
+		return
+	}
+
+	// Verificar token nuevamente
+	var idUsr int
+	var expiracion time.Time
+	var usado bool
+
+	err := a.db.QueryRow(`
+        SELECT id_usr, expiracion, usado 
+        FROM password_reset_tokens 
+        WHERE token = ?
+    `, token).Scan(&idUsr, &expiracion, &usado)
+
+	if err != nil || usado || time.Now().After(expiracion) {
+		data := map[string]interface{}{
+			"Error": "El enlace no es válido o ha expirado.",
+		}
+		a.renderHTML(ctx, "resetear.html", data)
+		return
+	}
+
+	// Hashear nueva contraseña
+	hash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	if err != nil {
+		data := map[string]interface{}{
+			"Error": "Error al procesar la contraseña.",
+			"Token": token,
+		}
+		a.renderHTML(ctx, "resetear.html", data)
+		return
+	}
+
+	// Actualizar contraseña en BD
+	_, err = a.db.Exec("UPDATE usuarios SET password = ? WHERE id_usr = ?", string(hash), idUsr)
+	if err != nil {
+		data := map[string]interface{}{
+			"Error": "Error al actualizar la contraseña.",
+			"Token": token,
+		}
+		a.renderHTML(ctx, "resetear.html", data)
+		return
+	}
+
+	// Marcar token como usado
+	_, err = a.db.Exec("UPDATE password_reset_tokens SET usado = TRUE WHERE token = ?", token)
+	if err != nil {
+		log.Println("Error al marcar token como usado:", err)
+	}
+
+	// Éxito
+	data := map[string]interface{}{
+		"Exito": "✔ Tu contraseña ha sido actualizada correctamente.",
+	}
+	a.renderHTML(ctx, "resetear.html", data)
+	a.renderHTML(ctx, "resetear.html", nil)
+
+}
+
 func (a *App) renderHTML(ctx *fasthttp.RequestCtx, name string, data any) {
 	ctx.SetContentType("text/html; charset=utf-8")
 	if templates == nil {
@@ -1182,8 +1507,9 @@ func (a *App) renderHTML(ctx *fasthttp.RequestCtx, name string, data any) {
 		return
 	}
 }
-func Connect() *sql.DB {
-	db, err := sql.Open("mysql", "root:12345678@tcp(127.0.0.1:3306)/supermercado?parseTime=true")
+func Connect(user, pass string) *sql.DB {
+	dsn := fmt.Sprintf("%s:%s@tcp(localhost:3306)/db_Super?parseTime=true", user, pass)
+	db, err := sql.Open("mysql", dsn)
 	if err != nil {
 		log.Fatal("Error conectando a MySQL:", err)
 	}
@@ -1192,6 +1518,22 @@ func Connect() *sql.DB {
 	}
 	log.Println("✓ Base de datos conectada")
 	return db
+}
+
+func Connect2(user, pass string) *sql.DB {
+
+	dsn := fmt.Sprintf("%s:%s@tcp(localhost:3306)/?multiStatements=true", user, pass)
+
+	db, err := sql.Open("mysql", dsn)
+	if err != nil {
+		return nil
+	}
+	if err = db.Ping(); err != nil {
+		log.Fatal("Ping falló:", err)
+	}
+	log.Println("✓ Base de datos conectada")
+	return db
+
 }
 
 func validarDB(user, pass string) bool {
@@ -1207,7 +1549,6 @@ func validarDB(user, pass string) bool {
 	return db.Ping() == nil
 
 }
-
 func getID(x interface{}) int {
 	s, ok := x.(string)
 	if !ok {
