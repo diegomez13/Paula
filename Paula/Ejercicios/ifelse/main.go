@@ -1,12 +1,18 @@
 package main
 
 import (
+	"bufio"
 	"fmt"
+	"modules/bases"
+	"os"
+	"strings"
 )
 
 func main() {
 
 	var accion string
+
+	bases.Test()
 
 	fmt.Println("Que quieres hacer? (mover/atacar/salir)")
 	fmt.Scanln(&accion)
@@ -21,5 +27,9 @@ func main() {
 		fmt.Println("No entiendo la acción")
 
 	}
+
+	reader := bufio.NewReader(os.Stdin)
+	userSistema, _ := reader.ReadString('\n')
+	userSistema = strings.TrimSpace(userSistema)
 
 }
