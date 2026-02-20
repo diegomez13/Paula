@@ -88,3 +88,6 @@ _, err = db.Exec(string(data))
 if err != nil {
 	panic(err)
 }
+
+
+para crear las tablas de las bases de datos 
